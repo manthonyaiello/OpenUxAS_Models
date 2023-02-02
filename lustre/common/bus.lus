@@ -1,0 +1,84 @@
+-- bus.lus
+
+-- Simple representation of a bus for OpenUxAS.
+
+include "types.lus"
+
+
+contract bus_contract (
+    -- message sent by the Plan Builder
+    pb_msg : message;
+
+    -- message sent by the Automation Request Validator
+    arv_msg : message;
+
+    -- message sent by the Waypoint Manager
+    wm_msg : message;
+
+    -- message sent by the Task
+    task_msg : message;
+) returns (
+    -- The selected output message
+    out_msg : message;
+);
+let
+    assume "Bus A1. Unique input message.
+      At most one input is not no_message.\n  "
+    (
+        (
+            pb_msg   <> no_message xor
+            arv_msg  <> no_message xor
+            wm_msg   <> no_message xor
+            task_msg <> no_message
+        ) or (
+            pb_msg   = no_message and
+            arv_msg  = no_message and
+            wm_msg   = no_message and
+            task_msg = no_message
+        )
+    );
+
+    guarantee "Bus G1. Output is merged inputs.
+      The bus outpus the non-empty input message, if it exists.\n  "
+    (
+        if pb_msg <> no_message then
+            out_msg = pb_msg
+        else if arv_msg <> no_message then
+            out_msg = arv_msg
+        else if wm_msg <> no_message then
+            out_msg = wm_msg
+        else if task_msg <> no_message then
+            out_msg = task_msg
+        else
+            out_msg = no_message
+    );
+tel;
+
+
+--
+-- Abstraction of a bus.
+--
+-- Note: not meant for implementation; only for environment modeling.
+node imported bus(
+    -- message sent by the Plan Builder
+    pb_msg : message;
+
+    -- message sent by the Automation Request Validator
+    arv_msg : message;
+
+    -- message sent by the Waypoint Manager
+    wm_msg : message;
+
+    -- message sent by the Task
+    task_msg : message;
+) returns (
+    -- The selected output message
+    out_msg : message;
+
+    -- Free choice: a token representing the service permitted to transmit on
+    -- the bus.
+    token_holder: token_holder_type;
+);
+(*@contract
+    import bus_contract(pb_msg, arv_msg, wm_msg, task_msg) returns (out_msg);
+*)

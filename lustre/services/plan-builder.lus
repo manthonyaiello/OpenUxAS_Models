@@ -1,0 +1,60 @@
+-- plan-builder.lus
+
+include "../common/types.lus"
+include "../common/pltl.lus"
+
+
+contract pb_contract(
+    -- The message currently received by the service
+    in_msg : message;
+
+    -- The ID to be used for ID generation
+    in_id : id_type;
+
+    -- True if the service is permitted to send a message.
+    can_send_message : bool;
+) returns (
+    -- The message currently sent by the service
+    out_msg : message;
+);
+let
+    guarantee "Plan Builder R1. Message IDs.
+      The Plan Builder correctly computes output message IDs.\n  "
+    (
+        out_msg <> no_message
+    ) => (
+        out_msg.id > in_id
+    );
+
+    guarantee "Plan Builder R2. Possible responses.
+      The Plan Builder responds only with specific messages.\n  "
+    (
+        if can_send_message then
+            out_msg.kind = unique_automation_response
+        else
+            out_msg = no_message
+    );
+tel;
+
+
+--
+-- The Plan Builder service
+--
+-- Currently, this service exists only as a source of initial messages to start
+-- interesting behaviors in the model.
+node imported plan_builder(
+    -- The message currently received by the service
+    in_msg : message;
+
+    -- The ID to be used for ID generation
+    in_id : id_type;
+
+    -- True if the service is permitted to send a message.
+    can_send_message : bool;
+) returns (
+    -- The message currently sent by the service
+    out_msg : message;
+);
+(*@contract
+    import pb_contract(in_msg, in_id, can_send_message) returns (out_msg);
+*)
