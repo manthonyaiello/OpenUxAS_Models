@@ -143,30 +143,29 @@ let
                     no_message;
 
 
-    -- "If the service receives an Automation Response message, the service
-    --  shall store the route from the Automation Response message. Otherwise,
-    --  if there is no next waypoint, the service shall clear the stored
-    --  route."
-    route = if in_msg.kind = automation_response and
-               nonempty_sequence(in_msg.route)
-            then
-                in_msg.route
-            else if waypoint <> no_waypoint then
-                no_route -> pre(route)
-            else
-                no_route;
+    frame (route, route_msg_id)
+        -- "The stored route shall initially be cleared."
+        route = no_route;
 
+        -- "The stored route message ID shall initially be cleared."
+        route_msg_id = no_id;
+    let
+        -- "If the service receives an Automation Response message, the service
+        --  shall store the route from the Automation Response message and the
+        -- ID of the Automation Response message."
+        if in_msg.kind = automation_response and
+            nonempty_sequence(in_msg.route)
+        then
+            route        = in_msg.route;
+            route_msg_id = in_msg.id;
 
-    -- "If the service receives an Automation Response message, the service
-    --  shall store the ID of the Automation Response message."
-    route_msg_id =  if in_msg.kind = automation_response and
-                       nonempty_sequence(in_msg.route)
-                    then
-                        in_msg.id
-                    else if waypoint <> no_waypoint then
-                        no_id -> pre(route_msg_id)
-                    else
-                        no_id;
+        -- "If there is no next waypoint, the service shall clear the stored
+        --  route and the stored route message ID."
+        else if waypoint = no_waypoint then
+            route        = no_route;
+            route_msg_id = no_id;
+        fi fi
+    tel
 
 
     -- ===================================================================== --
