@@ -152,7 +152,7 @@ let
     let
         -- "If the service receives an Automation Response message, the service
         --  shall store the route from the Automation Response message and the
-        -- ID of the Automation Response message."
+        --  ID of the Automation Response message."
         if in_msg.kind = automation_response and
             nonempty_sequence(in_msg.route)
         then
@@ -161,10 +161,10 @@ let
 
         -- "If there is no next waypoint, the service shall clear the stored
         --  route and the stored route message ID."
-        else if waypoint = no_waypoint then
+        elsif waypoint = no_waypoint then
             route        = no_route;
             route_msg_id = no_id;
-        fi fi
+        fi
     tel
 
 
@@ -219,37 +219,25 @@ let
     -- they can easily be enabled / disabled: they tend to pollute the output
     -- when expected-true properties are falsified.
 
-    -- check "L1.A. Witness antecedent of L1."
-    -- not (
-    --     out_msg.kind = mission_command
-    -- );
+    check reachable "L1.A. Witness antecedent of L1."
+    out_msg.kind = mission_command;
 
-    -- check "L2.A. Witness antecedent of L2."
-    -- not (
-    --     out_msg.kind = mission_command
-    -- );
+    check reachable "L2.A. Witness antecedent of L2."
+    out_msg.kind = mission_command;
 
 
-    -- check "P1.A. Witness antecedent of P1."
-    -- not (
-    --     out_msg.kind = mission_command
-    -- );
+    check reachable "P1.A. Witness antecedent of P1."
+    out_msg.kind = mission_command;
 
-    -- check "P3.A. Witness antecedent of P3."
-    -- not (
-    --     out_msg.kind = mission_command
-    -- );
+    check reachable "P3.A. Witness antecedent of P3."
+    out_msg.kind = mission_command;
 
-    -- check "P4.A. Witness antecedent of P4."
-    -- not (
-    --     out_msg.kind = mission_command and
-    --     out_msg      = wm_future_out_msg
-    -- );
+    check reachable "P4.A. Witness antecedent of P4."
+    (out_msg.kind = mission_command and
+     out_msg      = wm_future_out_msg);
 
 
-    -- check "R1.A. Witness antecedent of R1."
-    -- not (
-    --     out_msg.kind = mission_command and
-    --     out_msg      = wm_future_out_msg
-    -- );
+    check reachable "R1.A. Witness antecedent of R1."
+    (out_msg.kind = mission_command and
+     out_msg      = wm_future_out_msg);
 tel;
