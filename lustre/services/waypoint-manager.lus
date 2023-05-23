@@ -28,7 +28,7 @@ let
     guarantee "Waypoint Manager R1. IC.
       The Waypoint Manager initial condition is to send no message.\n  "
     (
-        O(out_msg = no_message)
+        (out_msg = no_message) -> true
     );
 
     guarantee "Waypoint Manager R2. Respects bus access.
@@ -39,33 +39,42 @@ let
         out_msg = no_message
     );
 
-    guarantee "Waypoint Manager R3. Message IDs.
-      The Waypoint Manager correctly computes output message IDs.\n  "
-    (
-        out_msg <> no_message
-    ) => (
-        out_msg.id = in_id + 1
+
+    mode No_Message (
+        require (
+            out_msg = no_message
+        );
     );
 
-    guarantee "Waypoint Manager R4. Possible responses.
-      The Waypoint Manager responds only with specific messages.\n  "
-    (
-        out_msg.kind = mission_command xor
-        out_msg      = no_message
-    );
+    mode Mission_Command (
+        require (
+            out_msg <> no_message
+        );
 
-    guarantee "Waypoint Manager R5.
-      When the Waypoint Manager sends a Mission Command message, the waypoint
-      sent is contained in the route that belongs to the previously received
-      Automation Response message that is referenced in the Mission Command
-      message.\n  "
-    (
-        out_msg.kind = mission_command and
-        out_msg      = wm_future_out_msg
-    ) => (
-        O(in_msg.kind = automation_response and
-          in_msg.id   = wm_future_out_msg.ref and
-          contains(in_msg.route, wm_future_out_msg.waypoint))
+        ensure "Waypoint Manager R3. Message IDs.
+          The Waypoint Manager correctly computes output message IDs.\n  "
+        (
+            out_msg.id = in_id + 1
+        );
+
+        ensure "Waypoint Manager R4. Only Response.
+          The Waypoint Manager only sends Mission_Command messages.\n  "
+        (
+            out_msg.kind = mission_command
+        );
+
+        ensure "Waypoint Manager R5.
+          When the Waypoint Manager sends a Mission Command message, the
+          waypoint sent is contained in the route that belongs to the
+          previously received Automation Response message that is referenced in
+          the Mission Command message.\n  "
+        (
+            out_msg      = wm_future_out_msg
+        ) => (
+            O(in_msg.kind = automation_response and
+            in_msg.id   = wm_future_out_msg.ref and
+            contains(in_msg.route, wm_future_out_msg.waypoint))
+        );
     );
 tel;
 
