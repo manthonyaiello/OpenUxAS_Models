@@ -21,7 +21,7 @@ let
     guarantee "Task R1. IC.
       The Task initial condition is to send no message.\n  "
     (
-        O(out_msg = no_message)
+        (out_msg = no_message) -> true
     );
 
     guarantee "Task R2. Respects bus access.
@@ -32,20 +32,43 @@ let
         out_msg = no_message
     );
 
-    guarantee "Task R3. Message IDs.
-      The Task correctly computes output message IDs.\n  "
+    guarantee "My One Mode Active"
     (
-        out_msg <> no_message
-    ) => (
-        out_msg.id = in_id + 1
+        out_msg = no_message xor
+        out_msg.kind = task_complete xor
+        out_msg.kind = error_response
     );
 
-    guarantee "Task R4. Possible responses.
-      The Task responds only with specific messages.\n  "
-    (
-        out_msg.kind = task_complete  xor
-        out_msg.kind = error_response xor
-        out_msg      = no_message
+    mode No_Message (
+        require (
+            out_msg = no_message
+        );
+    );
+
+    mode Task_Complete (
+        require (
+            out_msg <> no_message and
+            out_msg.kind = task_complete
+        );
+
+        ensure "Task R3. Message IDs.
+          The Task correctly computes output message IDs.\n  "
+        (
+            out_msg.id = in_id + 1
+        );
+    );
+
+    mode Error_Response (
+        require (
+            out_msg <> no_message and
+            out_msg.kind = error_response
+        );
+
+        ensure "Task R3. Message IDs.
+          The Task correctly computes output message IDs.\n  "
+        (
+            out_msg.id = in_id + 1
+        );
     );
 tel;
 
