@@ -26,7 +26,6 @@ contract arv_contract(
     out_msg : message;
 );
 let
-
     guarantee "Automation Request Validator R1. IC.
       The Automation Request Validator initial condition is to send no
       message.\n  "
@@ -144,23 +143,4 @@ let
                         in_msg.id
                     else
                         no_id;
-
-
-    -- ===================================================================== --
-    -- Antecedent Witnesses
-    --
-    -- These are grouped, rather than placed with their properties, so that
-    -- they can easily be enabled / disabled: they tend to pollute the output
-    -- when expected-true properties are falsified.
-
-    check reachable "P1.A. Witness antecedent of P1."
-    (
-        out_msg <> no_message
-    );
-
-    check reachable "R1.A. Witness antecedent of R1."
-    (
-        out_msg.kind = automation_response and
-        out_msg      = arv_future_out_msg
-    );
 tel;

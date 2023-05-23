@@ -173,9 +173,9 @@ let
 
     check "L1. Lemma for R4.\n  "
     (
-        out_msg.kind = mission_command
-    ) => (
         contains(out_msg.route, out_msg.waypoint)
+    ) provided (
+        out_msg.kind = mission_command
     );
 
 
@@ -184,9 +184,9 @@ let
       The Waypoint Manager never sends 'no waypoint' as part of a Mission
       Command.\n  "
     (
-        out_msg.kind = mission_command
-    ) => (
         out_msg.waypoint <> no_waypoint
+    ) provided (
+        out_msg.kind = mission_command
     );
 
 
@@ -204,40 +204,10 @@ let
       When the Waypoint Manager sends a Mission Command message, the referenced
       Automation Response message was previously received.\n  "
     (
-        out_msg.kind = mission_command and
-        out_msg      = wm_future_out_msg
-    ) => (
         O(in_msg.kind = automation_response and
           in_msg.id   = wm_future_out_msg.ref)
+    ) provided (
+        out_msg.kind = mission_command and
+        out_msg      = wm_future_out_msg
     );
-
-
-    -- ===================================================================== --
-    -- Antecedent Witnesses
-    --
-    -- These are grouped, rather than placed with their properties, so that
-    -- they can easily be enabled / disabled: they tend to pollute the output
-    -- when expected-true properties are falsified.
-
-    check reachable "L1.A. Witness antecedent of L1."
-    out_msg.kind = mission_command;
-
-    check reachable "L2.A. Witness antecedent of L2."
-    out_msg.kind = mission_command;
-
-
-    check reachable "P1.A. Witness antecedent of P1."
-    out_msg.kind = mission_command;
-
-    check reachable "P3.A. Witness antecedent of P3."
-    out_msg.kind = mission_command;
-
-    check reachable "P4.A. Witness antecedent of P4."
-    (out_msg.kind = mission_command and
-     out_msg      = wm_future_out_msg);
-
-
-    check reachable "R1.A. Witness antecedent of R1."
-    (out_msg.kind = mission_command and
-     out_msg      = wm_future_out_msg);
 tel;
