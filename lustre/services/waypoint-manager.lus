@@ -69,11 +69,12 @@ let
           previously received Automation Response message that is referenced in
           the Mission Command message.\n  "
         (
-            out_msg      = wm_future_out_msg
+            out_msg = wm_future_out_msg
         ) => (
-            O(in_msg.kind = automation_response and
-            in_msg.id   = wm_future_out_msg.ref and
-            contains(in_msg.route, wm_future_out_msg.waypoint))
+            O(in_msg.kind  = automation_response and
+              in_msg.id    = wm_future_out_msg.ref and
+              in_msg.route = wm_future_out_msg.route and
+              contains(in_msg.route, wm_future_out_msg.waypoint))
         );
     );
 tel;
@@ -208,7 +209,7 @@ let
 
 
     -- This property, which is interesting in its own right, functions as a
-    -- lemma for proving our requirement R4.
+    -- lemma for proving our requirement R5.
     check "P3.
       When the Waypoint Manager sends a Mission Command message, the referenced
       Automation Response message was previously received.\n  "

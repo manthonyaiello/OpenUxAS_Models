@@ -4,6 +4,12 @@ include "../common/types.lus"
 include "../common/pltl.lus"
 
 
+-- This constant represents a skolemized universally quantified variable
+-- that we use to link details of a message appearing the past with details
+-- of our output message in properties.
+const task_future_out_msg : message;
+
+
 contract task_contract(
     -- The message currently received by the service
     in_msg : message;
@@ -32,20 +38,58 @@ let
         out_msg = no_message
     );
 
-    guarantee "Task R3. Message IDs.
-      The Task correctly computes output message IDs.\n  "
+    guarantee "One Mode Active"
     (
-        out_msg <> no_message
-    ) => (
-        out_msg.id = in_id + 1
+        (::No_Message xor ::Some_Message) and
+        (::Some_Message => (::Task_Complete xor ::Error_Response))
     );
 
-    guarantee "Task R4. Possible responses.
-      The Task responds only with specific messages.\n  "
-    (
-        out_msg.kind = task_complete  xor
-        out_msg.kind = error_response xor
-        out_msg      = no_message
+    mode No_Message (
+        require (
+            out_msg = no_message
+        );
+    );
+
+    mode Some_Message (
+        require (
+            out_msg <> no_message
+        );
+
+        ensure "Task R3. Message IDs.
+          The Task correctly computes output message IDs.\n  "
+        (
+            out_msg.id = in_id + 1
+        );
+    );
+
+    mode Task_Complete (
+        require ::Some_Message;
+        require (
+            out_msg.kind = task_complete
+        );
+
+        ensure "R4.
+          When the Task sends a Task Complete message, the monitored route was
+          contained in a previously received Automation Response message.\n  "
+        (
+            out_msg      = task_future_out_msg
+        ) => (
+            O(in_msg.kind  = automation_response and
+              in_msg.route = task_future_out_msg.route)
+        );
+    );
+
+    mode Error_Response (
+        require ::Some_Message;
+        require (
+            out_msg.kind = error_response
+        );
+
+        ensure "Task R3. Message IDs.
+          The Task correctly computes output message IDs.\n  "
+        (
+            out_msg.id = in_id + 1
+        );
     );
 tel;
 
@@ -85,11 +129,6 @@ var
     -- True if the received waypoint doesn't match the expected waypoint.
     error : bool;
 const
-    -- This constant represents a skolemized universally quantified variable
-    -- that we use to link details of a message appearing the past with details
-    -- of our output message in properties.
-    task_future_out_msg : message;
-
     free_waypoint_index : index_type;
 let
     -- ===================================================================== --

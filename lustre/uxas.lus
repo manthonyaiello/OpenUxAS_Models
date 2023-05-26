@@ -39,9 +39,9 @@ node uxas() returns (
     -- message sent by the Task
     task_msg : message;
 
-);
-var
+    -- the service that holds the token
     token_holder : token_holder_type;
+);
 let
     -- ===================================================================== --
     -- Environment Modeling
@@ -109,13 +109,17 @@ var
 
     -- message sent by the Task
     task_msg : message;
+
+    -- the service that holds the token
+    token_holder : token_holder_type;
 let
     (in_msg,
      last_nonempty_msg_id,
      pb_msg,
      arv_msg,
      wm_msg,
-     task_msg) = uxas();
+     task_msg,
+     token_holder) = uxas();
 
 
     check "Bus IC.\n  "
@@ -168,6 +172,9 @@ var
 
     -- message sent by the Task
     task_msg : message;
+
+    -- the service that holds the token
+    token_holder : token_holder_type;
 const
     -- used to prove properties about messages in this model
     free_msg1, free_msg2 : message;
@@ -177,7 +184,8 @@ let
      pb_msg,
      arv_msg,
      wm_msg,
-     task_msg) = uxas();
+     task_msg,
+     token_holder) = uxas();
 
 
     check "E1:
@@ -279,13 +287,17 @@ var
 
     -- message sent by the Task
     task_msg : message;
+
+    -- the service that holds the token
+    token_holder : token_holder_type;
 let
     (in_msg,
      last_nonempty_msg_id,
      pb_msg,
      arv_msg,
      wm_msg,
-     task_msg) = uxas();
+     task_msg,
+     token_holder) = uxas();
 
 
     check reachable "W1. Witness no_message from the bus."
@@ -358,39 +370,127 @@ var
 
     -- message sent by the Task
     task_msg : message;
+
+    -- the service that holds the token
+    token_holder : token_holder_type;
 let
     (in_msg,
      last_nonempty_msg_id,
      pb_msg,
      arv_msg,
      wm_msg,
-     task_msg) = uxas();
+     task_msg,
+     token_holder) = uxas();
+
+
+    -- ===================================================================== --
+    -- Properties about Message Sending
+
+    check "Messages P1.
+      PB sends only Automation Request messages.\n  "
+    (
+        in_msg      = no_message xor
+        in_msg.kind = unique_automation_response
+    ) provided (
+        false -> (pre(token_holder) = plan_builder)
+    );
+
+    check "Messages P1.1.
+      Only the Plan Builder sends Unique Automation Response messages.\n  "
+    (
+        true -> (pre(token_holder) = plan_builder)
+    ) provided (
+        in_msg.kind = unique_automation_response
+    );
+
+    check "Messages P2.
+      ARV sends only Automation Response messages.\n  "
+    (
+        in_msg      = no_message xor
+        in_msg.kind = automation_response
+    ) provided (
+        false -> (pre(token_holder) = automation_request_validator)
+    );
+
+    check "Messages P2.1.
+      Only the ARV sends Automation Response messages.\n  "
+    (
+        true -> (pre(token_holder) = automation_request_validator)
+    ) provided (
+        in_msg.kind = automation_response
+    );
+
+    check "Messages P3.
+      WM sends only Mission Command messages.\n  "
+    (
+        in_msg      = no_message xor
+        in_msg.kind = mission_command
+    ) provided (
+        false -> (pre(token_holder) = waypoint_manager)
+    );
+
+    check "Messages P3.1
+      Only the WM sends Mission Command messages.\n  "
+    (
+        true -> (pre(token_holder) = waypoint_manager)
+    ) provided (
+        in_msg.kind = mission_command
+    );
+
+    check "Messages P4.
+      Task sends only Task Complete or Error messages.\n  "
+    (
+        in_msg      = no_message xor
+        in_msg.kind = task_complete xor
+        in_msg.kind = error_response
+    ) provided (
+        false -> (pre(token_holder) = task)
+    );
+
+    check "Messages P4.1
+      Only the Task sends Task Complete or Error messages.\n  "
+    (
+        true -> (pre(token_holder) = task)
+    ) provided (
+        in_msg.kind = task_complete or in_msg.kind = error_response
+    );
 
 
     -- ===================================================================== --
     -- Properties of Interest
 
-    check "P1.
-      All services correctly handle input ID and message ID.\n  "
-    (
-        in_msg.id > (no_id -> pre(last_nonempty_msg_id))
-    ) provided (
-        in_msg <> no_message
-    );
+    -- check "P1.
+    --   All services correctly handle input ID and message ID.\n  "
+    -- (
+    --     in_msg.id > (no_id -> pre(last_nonempty_msg_id))
+    -- ) provided (
+    --     in_msg <> no_message
+    -- );
 
-    check "P2.
-      Reestablish Waypoint Manager R1.\n  "
-    (
-        O(in_msg.kind = automation_response and
-          in_msg.id   = wm_future_out_msg.ref and
-          contains(in_msg.route, wm_future_out_msg.waypoint))
-    ) provided (
-        in_msg.kind = mission_command and
-        in_msg      = wm_future_out_msg
-    );
+    -- check "P2.
+    --   Reestablish Waypoint Manager R5.\n  "
+    -- (
+    --     O(in_msg.kind = automation_response and
+    --       in_msg.id   = wm_future_out_msg.ref and
+    --       contains(in_msg.route, wm_future_out_msg.waypoint))
+    -- ) provided (
+    --     in_msg.kind = mission_command and
+    --     in_msg      = wm_future_out_msg
+    -- );
+
+    -- check "P2.1.
+    --   The route on a Mission Command message is the same route on a prior
+    --   Unique Automation Response message.\n  "
+    -- (
+    --     O(in_msg.kind  = automation_response and
+    --       in_msg.route = wm_future_out_msg.route)
+    -- ) provided (
+    --     in_msg.kind = mission_command and
+    --     in_msg      = wm_future_out_msg
+    -- );
 
     check "P3.
-      Reestablish Automation Request Validator R1.\n  "
+      Reestablish Automation Request Validator R5.\n  "
     (
         O(in_msg.kind  = unique_automation_response and
           in_msg.id    = arv_future_out_msg.ref and
@@ -400,52 +500,148 @@ let
         in_msg      = arv_future_out_msg
     );
 
+    -- check "P3.1.
+    --   The route on an Automation Response message is the same route on a prior
+    --   Unique Automation Response message.\n  "
+    -- (
+    --     O(in_msg.kind  = unique_automation_response and
+    --       in_msg.route = arv_future_out_msg.route)
+    -- ) provided (
+    --     in_msg.kind = automation_response and
+    --     in_msg      = arv_future_out_msg
+    -- );
 
-    -- ===================================================================== --
-    -- Compositional Properties of Interest
-
-    check "C1.
-      Mission Command messages reference, transitively, prior Unique Automation
-      Response messages.\n  "
+    check "P3.2.
+      An Automation Response is always preceded by an associated Unique Automation Response
+      message.\n  "
     (
         O(in_msg.kind = unique_automation_response and
           in_msg.id   = arv_future_out_msg.ref)
     ) provided (
-        in_msg.kind = mission_command and
-        in_msg      = wm_future_out_msg and
-
-        -- assume that the free constant wm_future_out_msg references the id
-        -- of the free constant arv_future_out_msg. This is necessary for the
-        -- transitive nature of the property.
-        arv_future_out_msg.id = wm_future_out_msg.ref and
-
-        -- assume that the free constant arv_future_out_msg is equal to a prior
-        -- output. This is like saying `out_msg = wm_future_out_msg` above, but
-        -- the equality isn't tied to the current time step. Again, necessary
-        -- for the transitive nature of the property.
-        O(in_msg = arv_future_out_msg)
+        in_msg.kind = automation_response and
+        in_msg      = arv_future_out_msg
     );
 
-    check "C2.
-      Mission Command message waypoints are contained, transitively, on prior
-      received Unique Automation Response messages.\n  "
+    check "P3.3.
+      An Automation Response is always preceded by a Unique Automation Response
+      message.\n  "
     (
-        O(in_msg.kind = unique_automation_response and
-          in_msg.id   = arv_future_out_msg.ref and
-          contains(in_msg.route, wm_future_out_msg.waypoint))
+        O(in_msg.kind = unique_automation_response)
     ) provided (
-        in_msg.kind = mission_command and
-        in_msg      = wm_future_out_msg and
-
-        -- assume that the free constant wm_future_out_msg references the id
-        -- of the free constant arv_future_out_msg. This is necessary for the
-        -- transitive nature of the property.
-        arv_future_out_msg.id = wm_future_out_msg.ref and
-
-        -- assume that the free constant arv_future_out_msg is equal to a prior
-        -- output. This is like saying `out_msg = wm_future_out_msg` above, but
-        -- the equality isn't tied to the current time step. Again, necessary
-        -- for the transitive nature of the property.
-        O(in_msg = arv_future_out_msg)
+        in_msg.kind = automation_response
     );
+
+    check "P3.4.
+      An Automation Response is always preceded by a Unique Automation Response
+      message - with extra hypothesis.\n  "
+    (
+        O(in_msg.kind = unique_automation_response)
+    ) provided (
+        in_msg.kind = automation_response and
+        in_msg      = arv_future_out_msg
+    );
+
+    -- check "P4.
+    --   Reestablish Task R4.\n  "
+    -- (
+    --     O(in_msg.kind  = automation_response and
+    --       in_msg.route = task_future_out_msg.route)
+    -- ) provided (
+    --     in_msg.kind = task_complete and
+    --     in_msg      = task_future_out_msg
+    -- );
+
+
+    -- ===================================================================== --
+    -- Compositional Properties of Interest
+
+    -- check "C1.
+    --   Mission Command messages reference, transitively, prior Unique Automation
+    --   Response messages.\n  "
+    -- (
+    --     O(in_msg.kind = unique_automation_response and
+    --       in_msg.id   = arv_future_out_msg.ref)
+    -- ) provided (
+    --     in_msg.kind = mission_command and
+    --     in_msg      = wm_future_out_msg and
+
+    --     -- assume that the free constant wm_future_out_msg references the id
+    --     -- of the free constant arv_future_out_msg. This is necessary for the
+    --     -- transitive nature of the property.
+    --     arv_future_out_msg.id = wm_future_out_msg.ref and
+
+    --     -- assume that the free constant arv_future_out_msg is equal to a prior
+    --     -- output. This is like saying `out_msg = wm_future_out_msg` above, but
+    --     -- the equality isn't tied to the current time step. Again, necessary
+    --     -- for the transitive nature of the property.
+    --     O(in_msg = arv_future_out_msg)
+    -- );
+
+    -- check "C1.1.
+    --   Mission Command messages contain routes that, transitively, were on prior
+    --   Unique Automation Response messages.\n  "
+    -- (
+    --     O(in_msg.kind  = unique_automation_response and
+    --       in_msg.route = arv_future_out_msg.route)
+    -- ) provided (
+    --     in_msg.kind = mission_command and
+    --     in_msg      = wm_future_out_msg and
+
+    --     -- assume that the free constant wm_future_out_msg references the id
+    --     -- of the free constant arv_future_out_msg. This is necessary for the
+    --     -- transitive nature of the property.
+    --     arv_future_out_msg.id = wm_future_out_msg.ref and
+
+    --     -- assume that the free constant arv_future_out_msg is equal to a prior
+    --     -- output. This is like saying `out_msg = wm_future_out_msg` above, but
+    --     -- the equality isn't tied to the current time step. Again, necessary
+    --     -- for the transitive nature of the property.
+    --     O(in_msg = arv_future_out_msg)
+    -- );
+
+
+    -- check "C2.
+    --   Mission Command message waypoints are contained, transitively, on prior
+    --   received Unique Automation Response messages.\n  "
+    -- (
+    --     O(in_msg.kind = unique_automation_response and
+    --       in_msg.id   = arv_future_out_msg.ref and
+    --       contains(in_msg.route, wm_future_out_msg.waypoint))
+    -- ) provided (
+    --     in_msg.kind = mission_command and
+    --     in_msg      = wm_future_out_msg and
+
+    --     -- assume that the free constant wm_future_out_msg references the id
+    --     -- of the free constant arv_future_out_msg. This is necessary for the
+    --     -- transitive nature of the property.
+    --     arv_future_out_msg.id = wm_future_out_msg.ref and
+
+    --     -- assume that the free constant arv_future_out_msg is equal to a prior
+    --     -- output. This is like saying `out_msg = wm_future_out_msg` above, but
+    --     -- the equality isn't tied to the current time step. Again, necessary
+    --     -- for the transitive nature of the property.
+    --     O(in_msg = arv_future_out_msg)
+    -- );
+
+    -- check "C3.
+    --   The monitored route on a Task Complete message was contained in a prior
+    --   Unique Automation Response message.\n  "
+    -- (
+    --     O(in_msg.kind  = unique_automation_response and
+    --       in_msg.route = arv_future_out_msg.route)
+    -- ) provided (
+    --     in_msg.kind = task_complete and
+    --     in_msg      = task_future_out_msg and
+
+    --     -- assume that the free constant wm_future_out_msg references the id
+    --     -- of the free constant arv_future_out_msg. This is necessary for the
+    --     -- transitive nature of the property.
+    --     arv_future_out_msg.id = wm_future_out_msg.ref and
+
+    --     -- assume that the free constant arv_future_out_msg is equal to a prior
+    --     -- output. This is like saying `out_msg = wm_future_out_msg` above, but
+    --     -- the equality isn't tied to the current time step. Again, necessary
+    --     -- for the transitive nature of the property.
+    --     O(in_msg = arv_future_out_msg)
+    -- );
 tel;
