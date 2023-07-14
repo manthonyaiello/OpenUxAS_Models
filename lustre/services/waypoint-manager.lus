@@ -111,6 +111,10 @@ var
 
     -- The waypoint to send
     waypoint : waypoint_type;
+const
+    current_out_msg_p5 : message;
+    current_out_msg_p6 : message;
+    current_out_msg_p7 : message;
 let
     -- ===================================================================== --
     -- Service Behavior
@@ -220,4 +224,118 @@ let
         out_msg.kind = mission_command and
         out_msg      = wm_future_out_msg
     );
+
+    check "Waypoint Manager P4.
+      A Mission Command message ouput is always preceded by an Automation
+      Response message input.\n  "
+    (
+        O (in_msg.kind = automation_response)
+    ) provided (
+        out_msg.kind = mission_command
+    );
+
+    check "Waypoint Manager P5.
+      When the Waypoint Manager sends a Mission Command message, the referenced
+      Automation Response message was previously received.\n  "
+    -- forall (current_out_msg_p5 : message)
+    (
+        O (in_msg.kind = automation_response and
+           in_msg.id   = current_out_msg_p5.ref)
+    ) provided (
+        out_msg.kind = mission_command and
+        out_msg      = current_out_msg_p5
+    );
+
+    check "Waypoint Manager P6.
+      When the Waypoint Manager sends a Mission Command message, the route
+      contained in the output message is always contained on a previously
+      received Automation Response message.\n  "
+    -- forall (current_out_msg_p6 : message)
+    (
+        O (in_msg.kind = automation_response and
+           in_msg.route = current_out_msg_p6.route)
+    ) provided (
+        out_msg.kind = mission_command and
+        out_msg      = current_out_msg_p6
+    );
+
+    check "Waypoint Manager P7.
+      When the Waypoint Manager sends a Mission Command message, the waypoint
+      contained in the output message is always contained on the route of a
+      previously received Automation Response message.\n  "
+    -- forall (current_out_msg_p7 : message)
+    (
+        O (in_msg.kind = automation_response and
+           contains(in_msg.route, current_out_msg_p7.waypoint))
+    ) provided (
+        out_msg.kind = mission_command and
+        out_msg      = current_out_msg_p7
+    );
+
+
+    -- ===================================================================== --
+    -- Lemmas from IC3
+    --
+    -- These speed up the proof - especially if we try for monolithic proof.
+
+    check "L2.1 from IC3"
+    (O (in_msg.kind = automation_response and
+        in_msg.route = current_out_msg_p6.route) or
+     (not (0 <= route.first_index)) or
+     (not (route.last_index = current_out_msg_p6.route.last_index)) or
+     (not (route.first_index = current_out_msg_p6.route.first_index)));
+
+    check "L2.2 from IC3"
+    (O (in_msg.kind = automation_response and
+        in_msg.id   = current_out_msg_p5.ref) or
+     (not (0 <= route.first_index)) or
+     (not (route_msg_id = current_out_msg_p7.ref)) or
+     (not (current_out_msg_p5.ref = current_out_msg_p7.ref)));
+
+    check "L2.3 from IC3"
+    (O (in_msg.kind = automation_response) or (not (0 <= route.first_index)));
+
+    check "L2.4 from IC3"
+    (O(in_msg.kind = automation_response and
+       in_msg.id   = wm_future_out_msg.ref) or (not (route_msg_id = wm_future_out_msg.ref)) or (not (0 <= route.first_index)));
+
+    check "L2.5 from IC3"
+    (O (in_msg.kind = automation_response and
+        contains(in_msg.route, current_out_msg_p7.waypoint)) or
+     (not (current_out_msg_p7.waypoint <= current_out_msg_p7.route.last_index)) or
+     (not (route.first_index <= (-1 + current_out_msg_p7.waypoint))) or
+     (not (current_out_msg_p7.route.last_index = route.last_index)));
+
+    check "L2.6 from IC3"
+    (O (in_msg.kind = automation_response and
+        in_msg.id   = current_out_msg_p5.ref) or
+     (not (0 <= route.first_index)) or (not (route_msg_id = current_out_msg_p5.ref)));
+
+    check "L2.7 from IC3"
+    (O (in_msg.kind = automation_response and
+        contains(in_msg.route, current_out_msg_p7.waypoint)) or
+     (not (0 <= route.first_index)) or (not (route.first_index = current_out_msg_p7.waypoint)));
+
+    check "L2.8 from IC3"
+    (O(in_msg.kind  = automation_response and
+       in_msg.id    = wm_future_out_msg.ref and
+       in_msg.route = wm_future_out_msg.route and
+       contains(in_msg.route, wm_future_out_msg.waypoint)) or
+     (not (route.last_index = wm_future_out_msg.route.last_index)) or
+     (not (route.first_index = wm_future_out_msg.route.first_index)) or
+     (not (route_msg_id = wm_future_out_msg.ref)) or
+     (not (0 <= route.first_index)) or
+     (not (wm_future_out_msg.route.first_index <= wm_future_out_msg.waypoint)) or
+     (not (wm_future_out_msg.waypoint <= wm_future_out_msg.route.last_index)));
+
+    check "L2.9 from IC3"
+    (O(in_msg.kind  = automation_response and
+       in_msg.id    = wm_future_out_msg.ref and
+       in_msg.route = wm_future_out_msg.route and
+       contains(in_msg.route, wm_future_out_msg.waypoint)) or
+     (not (route.first_index = wm_future_out_msg.waypoint)) or
+     (not (route.last_index = wm_future_out_msg.route.last_index)) or
+     (not (route.first_index = wm_future_out_msg.route.first_index)) or
+     (not (route_msg_id = wm_future_out_msg.ref)) or
+     (not (0 <= route.first_index)));
 tel;

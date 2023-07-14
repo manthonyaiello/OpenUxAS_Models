@@ -80,6 +80,13 @@ let
               in_msg.id    = arv_future_out_msg.ref and
               in_msg.route = arv_future_out_msg.route)
         );
+
+        ensure "Automation Request Validator R5.1.
+          An Automation Response message is only output after a Unique
+          Automation Response message is received.\n  "
+        (
+            O(in_msg.kind  = unique_automation_response)
+        );
     );
 tel;
 
@@ -112,6 +119,11 @@ var
 
     -- The ID of the message that provided the route above
     route_msg_id : id_type;
+const
+    -- Free constants for use in properties
+    current_out_msg_p2 : message;
+    current_out_msg_p3 : message;
+    current_out_msg_p4 : message;
 let
     -- ===================================================================== --
     -- Service Behavior
@@ -152,4 +164,53 @@ let
                         in_msg.id
                     else
                         no_id;
+
+    -- ===================================================================== --
+    -- Properties
+
+    check "Automation Request Validator P1.
+      An Automation Response message output is always preceded by a Unique
+      Automation Response message input.\n  "
+    (
+        O (in_msg.kind = unique_automation_response)
+    ) provided (
+        out_msg.kind = automation_response
+    );
+
+    check "Automation Request Validator P2.
+      An Automation Response message output always references a previously
+      received Unique Automation Response message input.\n  "
+    -- forall (current_out_msg_p2 : message)
+    (
+        O (in_msg.kind = unique_automation_response and
+           in_msg.id   = current_out_msg_p2.ref)
+    ) provided (
+        out_msg.kind = automation_response and
+        out_msg      = current_out_msg_p2
+    );
+
+    check "Automation Request Validator P3.
+      An Automation Response message output's route is always contained on a
+      previously received Unique Automation Response message.\n"
+    -- forall (current_out_msg_p3 : message)
+    (
+        O (in_msg.kind  = unique_automation_response and
+           in_msg.route = current_out_msg_p3.route)
+    ) provided (
+        out_msg.kind = automation_response and
+        out_msg      = current_out_msg_p3
+    );
+
+    check "Automation Request Validator P4.
+      An Automation Response message output always references a Unique
+      Automation Response message input with the same route.\n"
+    -- forall (current_out_msg_p4 : message)
+    (
+        O (in_msg.kind  = unique_automation_response and
+           in_msg.id    = current_out_msg_p4.ref and
+           in_msg.route = current_out_msg_p4.route)
+    ) provided (
+        out_msg.kind = automation_response and
+        out_msg      = current_out_msg_p4
+    );
 tel;
