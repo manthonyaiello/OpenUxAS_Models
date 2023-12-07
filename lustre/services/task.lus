@@ -296,47 +296,4 @@ let
     ) provided (
         out_msg.kind = error_response
     );
-
-    -- We need 1 or more of the following 3 lemmas for IC3 to prove this quickly.
-    check "L1.1 from IC3"
-    (error or
-    O(in_msg.kind     = mission_command and
-      in_msg.waypoint = get(task_future_out_msg.route, free_waypoint_index)) or
-    (((-1 * waypoint_index) + (1 * free_waypoint_index) + 0) = 0) or
-    (not (((-1 * task_future_out_msg.route.first_index) + (1 * free_waypoint_index) + 1) > 0)) or
-    (not (((1 * task_future_out_msg.route.first_index) + (-1 * free_waypoint_index) + 1) > 0)) or
-    (not (((1 * monitored_route.first_index) + (-1 * task_future_out_msg.route.first_index) + 0) = 0)) or
-    (not (((1 * monitored_route.last_index) + (-1 * task_future_out_msg.route.last_index) + 0) = 0)));
-
-    check "L1.2 from IC3"
-    (error or
-    O(in_msg.kind     = mission_command and
-      in_msg.waypoint = get(task_future_out_msg.route, free_waypoint_index)) or
-    (((-1 * waypoint_index) + (1 * free_waypoint_index) + 0) = 0) or
-    (not (((-1 * monitored_route.last_index) + (1 * task_future_out_msg.route.last_index)) = 0)) or
-    (not (((-1 * monitored_route.first_index) + (1 * task_future_out_msg.route.first_index)) = 0)) or
-    (not (((-1 * task_future_out_msg.route.first_index) + (1 * free_waypoint_index) + 1) > 0)) or
-    (not (((1 * task_future_out_msg.route.last_index) + (-1 * free_waypoint_index) + 1) > 0)) or
-    (not (((-1 * monitored_route.last_index) + (1 * waypoint_index) + 1) > 0)));
-
-    check "L1.3 from IC3"
-    (error or
-    O(in_msg.kind     = mission_command and
-      in_msg.waypoint = get(task_future_out_msg.route, free_waypoint_index)) or
-    (((-1 * waypoint_index) + (1 * free_waypoint_index) + 0) = 0) or
-    (not (((1 * waypoint_index) + (-1 * free_waypoint_index) + 2) > 0)) or
-    (((1 * waypoint_index) + (-1 * free_waypoint_index) + 1) = 0) or
-    (not (((1 * monitored_route.first_index) + (-1 * task_future_out_msg.route.first_index) + 0) = 0)) or
-    (not (((1 * monitored_route.last_index) + (-1 * task_future_out_msg.route.last_index) + 0) = 0)) or
-    (not (((-1 * task_future_out_msg.route.first_index) + (1 * free_waypoint_index) + 0) > 0)));
-
-    check "L2."
-    (
-       O(in_msg.kind  = automation_response and
-         in_msg.route = task_future_out_msg.route)
-    ) provided (
-       monitored_route.first_index = task_future_out_msg.route.first_index and
-       monitored_route.last_index = task_future_out_msg.route.last_index and
-       monitored_route.first_index >= 0
-    );
 tel;
